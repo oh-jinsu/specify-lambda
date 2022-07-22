@@ -3,14 +3,14 @@
 ```ts
 // index.ts
 
-import { Lambda, Executor Query } from "specify-lambda"
+import { specify, Query } from "specify-lambda"
 
-class RequestSpec {
+export class RequestSpec {
   @Query("username")
   username: string;
 }
 
-class ResponseSpec {
+export class ResponseSpec {
   readonly statusCode: 200
 
   readonly headers: Record<string, string>
@@ -18,18 +18,15 @@ class ResponseSpec {
   readonly body: any
 }
 
-class MyLambda extends Lambda(RequestSpec, ResponseSpec) {
-  @Executor()
-  async execute({ username }: RequestSpec): Promise<ResponseSpec> {
-    const message = `Hello ${username || "world"}!`
-
-    return {
-      statusCode: 200,
-      headers: {},
-      body: { message },
-    }
+export const handler = specify(RequestSpec, ResponseSpec)(async ({ username }) => {
+  const message = `Hello ${username || "world"}!`
+  
+  console.log(username)
+  
+  return {
+    statusCode: 200,
+    headers: {},
+    body: { message },
   }
-}
-
-export const handler = new MyLambda().handler
+})
 ```
