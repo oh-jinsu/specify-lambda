@@ -1,3 +1,5 @@
+export * from "./exception"
+
 import { REQUEST_FILTERS } from "./constants";
 import { Exception } from "./exception";
 import { Lambda, ProxyHandler, ResponseSpec, TypeOf } from "./types";
