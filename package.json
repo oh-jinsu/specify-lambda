@@ -1,0 +1,32 @@
+{
+  "name": "specify-lambda",
+  "version": "1.0.1",
+  "description": "Write your explicit Lambda function",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "tsc -d && npm publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oh-jinsu/specify-lambda.git"
+  },
+  "keywords": [
+    "lambda"
+  ],
+  "author": {
+    "name": "oh-jinsu",
+    "email": "ohjinsu@codersproduct.com",
+    "url": "https://ohjinsu.me"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/oh-jinsu/specify-lambda/issues"
+  },
+  "homepage": "https://github.com/oh-jinsu/specify-lambda#readme",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.101",
+    "typescript": "^4.7.4"
+  }
+}
