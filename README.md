@@ -1,16 +1,16 @@
 # Write your explicit Lambda function
 
 ```ts
-// spec.ts
+// index.ts
 
-import { Query } from "specify-lambda"
+import { Lambda, Executor Query } from "specify-lambda"
 
-export class RequestSpec {
+class RequestSpec {
   @Query("username")
   username: string;
 }
 
-export class ResponseSpec {
+class ResponseSpec {
   readonly statusCode: 200
 
   readonly headers: Record<string, string>
@@ -18,12 +18,7 @@ export class ResponseSpec {
   readonly body: any
 }
 
-// lambda.ts
-
-import { Executor, Lambda } from "specify-lambda"
-import { RequestSpec, ResponseSpec } from "./spec";
-
-export class MyLambda extends Lambda(RequestSpec, ResponseSpec) {
+class MyLambda extends Lambda(RequestSpec, ResponseSpec) {
   @Executor()
   async execute({ username }: RequestSpec): Promise<ResponseSpec> {
     const message = `Hello ${username || "world"}!`
@@ -35,10 +30,6 @@ export class MyLambda extends Lambda(RequestSpec, ResponseSpec) {
     }
   }
 }
-
-// index.ts (entrypoint)
-
-import { MyLambda } from "./lambda"
 
 export const handler = new MyLambda().handler
 ```
