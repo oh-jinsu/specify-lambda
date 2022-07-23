@@ -1,1 +1,3 @@
-export const REQUEST_FILTERS = "__request_filters"
+export const REQUEST_VALIDATOR = "__request_validator"
+
+export const REQUEST_MAPPER = "__request_mapper"
