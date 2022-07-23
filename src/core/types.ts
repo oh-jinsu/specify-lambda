@@ -1,9 +1,5 @@
-import { APIGatewayProxyEventV2, APIGatewayProxyResultV2, Handler } from "aws-lambda";
-
 export interface TypeOf<T> { new(): T; }
 
-export type ResponseSpec = { statusCode: number, headers: Record<string, string>, body: any }
+export type Result<T> = { statusCode: number, headers?: Record<string, string>, body: T }
 
-export type ProxyHandler = Handler<APIGatewayProxyEventV2, APIGatewayProxyResultV2>
-
-export type Lambda<T, K> = (params: T) => Promise<K> 
+export type Lambda<T, K> = (params: T) => Promise<Result<K>> 

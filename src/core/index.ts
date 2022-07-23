@@ -1,24 +1,29 @@
 export * from "./exception"
 
+import { APIGatewayProxyEventV2, Context } from "aws-lambda";
 import { REQUEST_FILTERS } from "./constants";
 import { Exception } from "./exception";
-import { Lambda, ProxyHandler, ResponseSpec, TypeOf } from "./types";
+import { Lambda, Result, TypeOf } from "./types";
 
-export const specify = <T, K extends ResponseSpec>(request: TypeOf<T>, response: TypeOf<K>) => (lambda: Lambda<T, K>): ProxyHandler => async (event, context) => {
+export const specify = <T, K>(request: TypeOf<T>, response: TypeOf<K>) => (lambda: Lambda<T, K>) => async (event: APIGatewayProxyEventV2, context: Context): Promise<Result<string>> => {
   try {
-    const filters = request.prototype[REQUEST_FILTERS]
+    const args = (() => {
+      const filters = request.prototype[REQUEST_FILTERS]
 
-    if (!filters) {
-      return lambda(new request());
-    }
+      if (!filters) {
+        return {};
+      }
+  
+      const result: Record<string, any> = {}
+  
+      for (const key in filters) {
+        result[key] = filters[key](event, context)
+      }
 
-    const args: Record<string, any> = {}
+      return result
+    })() as T
 
-    for (const key in filters) {
-      args[key] = filters[key](event, context)
-    }
-
-    const result = await lambda(args as T)
+    const result = await lambda(args)
 
     const { statusCode, headers, body } = result
 
