@@ -9,8 +9,10 @@ export const specify = <T, K extends Result>(request: TypeOf<T>, response: TypeO
   try {
     const validators = request.prototype[REQUEST_VALIDATOR]
 
-    for (const key in validators) {
-      validators[key](event, context)
+    if (validators) {
+      for (const key in validators) {
+        validators[key](event, context)
+      }        
     }
 
     const params = (() => {
