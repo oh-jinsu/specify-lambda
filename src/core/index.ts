@@ -5,7 +5,7 @@ import { REQUEST_FILTERS } from "./constants";
 import { Exception } from "./exception";
 import { Lambda, Result, TypeOf } from "./types";
 
-export const specify = <T, K>(request: TypeOf<T>, response: TypeOf<K>) => (lambda: Lambda<T, K>) => async (event: APIGatewayProxyEventV2, context: Context): Promise<Result<string>> => {
+export const specify = <T, K>(request: TypeOf<T>) => (lambda: Lambda<T, K>) => async (event: APIGatewayProxyEventV2, context: Context): Promise<Result<string>> => {
   try {
     const args = (() => {
       const filters = request.prototype[REQUEST_FILTERS]
