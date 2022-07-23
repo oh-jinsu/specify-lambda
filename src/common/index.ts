@@ -1,2 +1,2 @@
-export * from "./decorators/mappers"
+export * from "./decorators"
 export * from "./exceptions"

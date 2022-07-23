@@ -15,3 +15,13 @@ export const Method = (value: string) => RequestValidator("__METHOD")((event) =>
     throw new BadRequestException()
   }
 })
+
+export const Get = () => Method("GET")
+
+export const Post = () => Method("POST")
+
+export const Put = () => Method("PUT")
+
+export const PATCH = () => Method("PATCH")
+
+export const DELETE = () => Method("DELETE")
