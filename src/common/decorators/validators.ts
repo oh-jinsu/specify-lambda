@@ -1,8 +1,8 @@
-import { APIGatewayProxyEventV2, Context } from "aws-lambda"
+import { APIGatewayProxyEvent, Context } from "aws-lambda"
 import { REQUEST_VALIDATOR } from "../../core/constants"
 import { BadRequestException } from "../exceptions"
 
-type Validator = (event: APIGatewayProxyEventV2, context: Context) => void
+type Validator = (event: APIGatewayProxyEvent, context: Context) => void
 
 const RequestValidator = (name: string) => (validator: Validator) => (target: any) => {
   target.prototype[REQUEST_VALIDATOR] ??= {}
@@ -11,7 +11,7 @@ const RequestValidator = (name: string) => (validator: Validator) => (target: an
 }
 
 export const Method = (value: string) => RequestValidator("__METHOD")((event) => {
-  if (event.requestContext.http.method.toLowerCase() !== value.toLowerCase()) {
+  if (event.httpMethod.toLowerCase() !== value.toLowerCase()) {
     throw new BadRequestException()
   }
 })

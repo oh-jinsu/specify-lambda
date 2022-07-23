@@ -1,11 +1,11 @@
 export * from "./exception"
 
-import { APIGatewayProxyEventV2, Context } from "aws-lambda";
+import { APIGatewayProxyEvent, Context } from "aws-lambda";
 import { REQUEST_MAPPER, REQUEST_VALIDATOR } from "./constants";
 import { Exception } from "./exception";
 import { Lambda, PlainResult, Result, TypeOf } from "./types";
 
-export const specify = <T, K extends Result>(request: TypeOf<T>, response: TypeOf<K>) => (lambda: Lambda<T, K>) => async (event: APIGatewayProxyEventV2, context: Context): Promise<PlainResult> => {
+export const specify = <T, K extends Result>(request: TypeOf<T>, response: TypeOf<K>) => (lambda: Lambda<T, K>) => async (event: APIGatewayProxyEvent, context: Context): Promise<PlainResult> => {
   try {
     const validators = request.prototype[REQUEST_VALIDATOR]
 

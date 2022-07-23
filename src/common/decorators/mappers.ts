@@ -1,8 +1,8 @@
-import { APIGatewayProxyEventV2, Context } from "aws-lambda"
+import { APIGatewayProxyEvent, Context } from "aws-lambda"
 import { REQUEST_MAPPER } from "../../core/constants"
 import { BadRequestException } from "../exceptions"
 
-type Mapper = (event: APIGatewayProxyEventV2, context:Context) => any
+type Mapper = (event: APIGatewayProxyEvent, context:Context) => any
 
 const RequestMapper = (mapper: Mapper) => (target: any, name: string) => {
   target[REQUEST_MAPPER] ??= {}
@@ -24,14 +24,28 @@ export const Body = (key: string) => RequestMapper((event) => {
 
 export const Header = (key: string) => RequestMapper((event) => event.headers?.[key])
 
+export const BearerAuth = () => RequestMapper((event) => {
+  const authorization = event.headers?.["Authorization"]
+
+  if (!authorization) {
+    return null
+  }
+
+  return authorization.replace("Bearer ", "")
+})
+
 export const Cookie = (key: string) => RequestMapper((event) => {
-  if (!event.cookies) {
+  const cookies = event.headers?.["Cookie"]
+
+  if (!cookies) {
     return
   }
   
-  for (const cookie of event.cookies) {
-    if (cookie.startsWith(key)) {
-      return cookie.replace(key, "")
+  for (const cookie of cookies.split(";")) {
+    const row = cookie.trim()
+
+    if (row.startsWith(key)) {
+      return row.replace(key, "")
     }
   }
 })
