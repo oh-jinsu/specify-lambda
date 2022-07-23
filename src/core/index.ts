@@ -27,10 +27,17 @@ export const specify = <T, K extends Result>(request: TypeOf<T>, response: TypeO
 
     const { statusCode, headers, body } = result
 
+    if (body) {
+      return {
+        statusCode,
+        headers,
+        body: JSON.stringify(body)
+      }
+    }
+
     return {
       statusCode,
       headers,
-      body: JSON.stringify(body),
     }
   } catch (e: any) {
     if (e instanceof Exception) {
