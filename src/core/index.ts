@@ -2,7 +2,7 @@
 export * from "./exception";
 
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
-import { MESSAGE, ALIAS_PROPERTY_VALUE_MAPPER, ALIAS_CLASS_VALDIATOR, STATUS_CODE } from "./constants";
+import { MESSAGE, ALIAS_PROPERTY_VALUE_MAPPER, ALIAS_CLASS_VALDIATOR, STATUS_CODE, ALIAS_BODY_MAPPER } from "./constants";
 import { Lambda, PlainResult, Result, TypeOf } from "./types";
 
 export const specify =
@@ -38,17 +38,27 @@ export const specify =
 
       const { statusCode, headers, body } = result;
 
-      if (body) {
+      if (!body) {
         return {
           statusCode,
           headers,
-          body: JSON.stringify(body),
+        };
+      }
+
+      const bodyMapper = response.prototype[ALIAS_BODY_MAPPER];
+
+      if (bodyMapper) {
+        return {
+          statusCode,
+          headers,
+          body: JSON.stringify(bodyMapper(body)),
         };
       }
 
       return {
         statusCode,
         headers,
+        body: JSON.stringify(body),
       };
     } catch (e: any) {
       if (STATUS_CODE in e && MESSAGE in e) {

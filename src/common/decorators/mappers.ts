@@ -1,4 +1,4 @@
-import { ALIAS_PROPERTY_VALUE_MAPPER } from "../../core/constants";
+import { ALIAS_BODY_MAPPER, ALIAS_PROPERTY_VALUE_MAPPER } from "../../core/constants";
 import { PropertyValueMapper } from "../../core/decorator";
 import { BadRequestException } from "../exceptions";
 
@@ -61,4 +61,35 @@ export const Required = () => (target: any, name: string) => {
 
     return result;
   })(target, name);
+};
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const SnakeCase = () => (target: any, name: string) => {
+  const map = (value: any): any => {
+    if (value === null || value === undefined) {
+      return undefined;
+    }
+
+    if (Array.isArray(value)) {
+      return value.map(map);
+    }
+
+    if (value.constructor === Object) {
+      const result: Record<string, any> = {};
+
+      Object.entries(value).forEach(([key, value]) => {
+        const mappedKey = key.replace(/[a-z][A-Z]/g, ([first, second]) => {
+          return `${first}_${second.toLowerCase()}`;
+        });
+
+        result[mappedKey] = map(value);
+      });
+
+      return result;
+    }
+
+    return value;
+  };
+
+  target[ALIAS_BODY_MAPPER] = map;
 };
