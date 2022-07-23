@@ -1,9 +1,6 @@
-export class Exception extends Error {
-  readonly statusCode: number;
+import { MESSAGE, STATUS_CODE } from "./constants";
 
-  constructor(statusCode: number, message: string) {
-    super(message);
-
-    this.statusCode = statusCode;
-  }
-}
+export const Exception = (statusCode: number, message: string) => (target: any) => {
+  target[STATUS_CODE] = statusCode;
+  target[MESSAGE] = message;
+};

@@ -1,3 +1,7 @@
-export const REQUEST_VALIDATOR = "__request_validator";
+export const STATUS_CODE = "__exception_status_code";
 
-export const REQUEST_MAPPER = "__request_mapper";
+export const MESSAGE = "__exception_message";
+
+export const ALIAS_CLASS_VALDIATOR = "__class_validator";
+
+export const ALIAS_PROPERTY_VALUE_MAPPER = "__property_value_mapper";

@@ -1,21 +1,13 @@
-import { APIGatewayProxyEvent, Context } from "aws-lambda";
-import { REQUEST_MAPPER } from "../../core/constants";
+import { ALIAS_PROPERTY_VALUE_MAPPER } from "../../core/constants";
+import { PropertyValueMapper } from "../../core/decorator";
 import { BadRequestException } from "../exceptions";
 
-type Mapper = (event: APIGatewayProxyEvent, context: Context) => any;
+export const Query = (key: string) => PropertyValueMapper((event) => event.queryStringParameters?.[key]);
 
-const RequestMapper = (mapper: Mapper) => (target: any, name: string) => {
-  target[REQUEST_MAPPER] ??= {};
-
-  target[REQUEST_MAPPER][name] = mapper;
-};
-
-export const Query = (key: string) => RequestMapper((event) => event.queryStringParameters?.[key]);
-
-export const Path = (key: string) => RequestMapper((event) => event.pathParameters?.[key]);
+export const Path = (key: string) => PropertyValueMapper((event) => event.pathParameters?.[key]);
 
 export const Body = (key: string) =>
-  RequestMapper((event) => {
+  PropertyValueMapper((event) => {
     if (!event.body) {
       return;
     }
@@ -23,10 +15,10 @@ export const Body = (key: string) =>
     return JSON.parse(event.body)[key];
   });
 
-export const Header = (key: string) => RequestMapper((event) => event.headers?.[key]);
+export const Header = (key: string) => PropertyValueMapper((event) => event.headers?.[key]);
 
 export const BearerAuth = () =>
-  RequestMapper((event) => {
+  PropertyValueMapper((event) => {
     const authorization = event.headers?.["Authorization"];
 
     if (!authorization) {
@@ -37,7 +29,7 @@ export const BearerAuth = () =>
   });
 
 export const Cookie = (key: string) =>
-  RequestMapper((event) => {
+  PropertyValueMapper((event) => {
     const cookies = event.headers?.["Cookie"];
 
     if (!cookies) {
@@ -54,13 +46,13 @@ export const Cookie = (key: string) =>
   });
 
 export const Required = () => (target: any, name: string) => {
-  const filter = target[REQUEST_MAPPER]?.[name];
+  const filter = target[ALIAS_PROPERTY_VALUE_MAPPER]?.[name];
 
   if (!filter) {
     return;
   }
 
-  target[REQUEST_MAPPER][name] = (event: any, context: any) => {
+  return PropertyValueMapper((event, context) => {
     const result = filter(event, context);
 
     if (!result) {
@@ -68,5 +60,5 @@ export const Required = () => (target: any, name: string) => {
     }
 
     return result;
-  };
+  })(target, name);
 };

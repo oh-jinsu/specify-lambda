@@ -2,8 +2,7 @@
 export * from "./exception";
 
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
-import { REQUEST_MAPPER, REQUEST_VALIDATOR } from "./constants";
-import { Exception } from "./exception";
+import { MESSAGE, ALIAS_PROPERTY_VALUE_MAPPER, ALIAS_CLASS_VALDIATOR, STATUS_CODE } from "./constants";
 import { Lambda, PlainResult, Result, TypeOf } from "./types";
 
 export const specify =
@@ -11,7 +10,7 @@ export const specify =
   (lambda: Lambda<T, K>) =>
   async (event: APIGatewayProxyEvent, context: Context): Promise<PlainResult> => {
     try {
-      const validators = request.prototype[REQUEST_VALIDATOR];
+      const validators = request.prototype[ALIAS_CLASS_VALDIATOR];
 
       if (validators) {
         for (const key in validators) {
@@ -20,7 +19,7 @@ export const specify =
       }
 
       const params = (() => {
-        const mappers = request.prototype[REQUEST_MAPPER];
+        const mappers = request.prototype[ALIAS_PROPERTY_VALUE_MAPPER];
 
         if (!mappers) {
           return new request();
@@ -52,8 +51,10 @@ export const specify =
         headers,
       };
     } catch (e: any) {
-      if (e instanceof Exception) {
-        const { statusCode, message } = e;
+      if (STATUS_CODE in e && MESSAGE in e) {
+        const statusCode = e[STATUS_CODE];
+
+        const message = e[MESSAGE];
 
         return {
           statusCode,
