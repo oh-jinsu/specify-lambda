@@ -1,2 +1,2 @@
-export * from "./validators";
-export * from "./mappers";
+export * from "./method";
+export * from "./params";

@@ -1,78 +1,42 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 export * from "./exception";
 
-import { APIGatewayProxyEvent, Context } from "aws-lambda";
-import { MESSAGE, ALIAS_PROPERTY_VALUE_MAPPER, ALIAS_CLASS_VALDIATOR, STATUS_CODE, ALIAS_BODY_MAPPER } from "./constants";
-import { Lambda, PlainResult, Result, TypeOf } from "./types";
+import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
+import { Exception } from "./exception";
+import { calculateParams } from "./mappers/request";
+import { calculateResult } from "./mappers/response";
+import { Lambda, Result, GenericOf } from "./types";
 
 export const specify =
-  <T, K extends Result>(request: TypeOf<T>, response: TypeOf<K>) =>
+  <T, K extends Result>(request: GenericOf<T>, response: GenericOf<K>) =>
   (lambda: Lambda<T, K>) =>
-  async (event: APIGatewayProxyEvent, context: Context): Promise<PlainResult> => {
+  async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
     try {
-      const validators = request.prototype[ALIAS_CLASS_VALDIATOR];
-
-      if (validators) {
-        for (const key in validators) {
-          validators[key](event, context);
-        }
-      }
-
-      const params = (() => {
-        const mappers = request.prototype[ALIAS_PROPERTY_VALUE_MAPPER];
-
-        if (!mappers) {
-          return new request();
-        }
-
-        const result: Record<string, any> = {};
-
-        for (const key in mappers) {
-          result[key] = mappers[key](event, context);
-        }
-
-        return result;
-      })() as T;
+      const params = calculateParams<T>(event, context, request) || new request();
 
       const result = await lambda(params);
 
-      const { statusCode, headers, body } = result;
-
-      if (!body) {
-        return {
-          statusCode,
-          headers,
-        };
-      }
-
-      const bodyMapper = response.prototype[ALIAS_BODY_MAPPER];
-
-      if (bodyMapper) {
-        return {
-          statusCode,
-          headers,
-          body: JSON.stringify(bodyMapper(body)),
-        };
-      }
+      const { statusCode, headers, body } = calculateResult(response, result) || result;
 
       return {
-        statusCode,
+        statusCode: statusCode || 200,
         headers,
-        body: JSON.stringify(body),
+        body: body ? JSON.stringify(body) : "",
       };
-    } catch (e: any) {
-      if (STATUS_CODE in e && MESSAGE in e) {
-        const statusCode = e[STATUS_CODE];
-
-        const message = e[MESSAGE];
+    } catch (error: any) {
+      if (error instanceof Exception) {
+        const { statusCode, message, headers } = error;
 
         return {
           statusCode,
-          body: JSON.stringify({ message }),
+          headers,
+          body: JSON.stringify({
+            message,
+          }),
         };
       }
 
-      const { message } = e;
+      const { message } = error;
 
       return {
         statusCode: 500,
