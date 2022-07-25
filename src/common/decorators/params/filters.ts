@@ -25,7 +25,7 @@ const validator =
     throw new BadRequestException();
   };
 
-export const required: Filter<unknown> = (_, __, value) => {
+export const required: Filter<unknown> = (value) => {
   if (!value) {
     throw new BadRequestException();
   }
