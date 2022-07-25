@@ -13,7 +13,7 @@ export const specify =
     try {
       const params = calculateParams(event, context, {}, request) || new request();
 
-      const result = await lambda(params);
+      const result = await lambda(params, event, context);
 
       const { statusCode, headers, body } = calculateResult(result, response) || result;
 
