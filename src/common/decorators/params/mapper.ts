@@ -60,6 +60,13 @@ export const Cookie = (key: string) => (target: any, name: string) =>
     }),
   )(target);
 
+export const Event = () => (target: any, name: string) => enhanceRequest(requestSelector(name)((event) => event));
+
+export const PrincipalId = () => (target: any, name: string) =>
+  enhanceRequest(requestSelector(name)((event) => event.requestContext.authorizer?.["principalId"]));
+
+export const Context = () => (target: any, name: string) => enhanceRequest(requestSelector(name)((_, context) => context));
+
 export const Parse =
   <T>(parser: (value: unknown) => T) =>
   (target: any, name: string) =>
