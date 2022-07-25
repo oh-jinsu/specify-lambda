@@ -3,32 +3,38 @@ import { GenericOf } from "../types";
 
 export const ALIAS_REQUEST_MAPPER = "__request_mapper";
 
-export type RequestMapper<T = Record<string, unknown>> = (event: APIGatewayProxyEvent, context: Context, value: T) => T;
+export const calculateParams = <T = unknown>(event: APIGatewayProxyEvent, context: Context, value: Record<string, unknown>, target: GenericOf<T>): T => {
+  return target.prototype[ALIAS_REQUEST_MAPPER]?.(event, context, value, target);
+};
 
-export const calculateParams = <T>(event: APIGatewayProxyEvent, context: Context, spec: GenericOf<T>): T =>
-  spec.prototype[ALIAS_REQUEST_MAPPER](event, context, new spec());
+export type RequestReducer = (
+  event: APIGatewayProxyEvent,
+  context: Context,
+  value: Record<string, unknown>,
+  target: GenericOf<unknown>,
+) => Record<string, unknown>;
 
-export const map =
-  <T>(mapper: RequestMapper<T>) =>
-  (target: any) => {
-    const prev = target[ALIAS_REQUEST_MAPPER] as RequestMapper<T>;
+export const enhanceRequest = (reducer: RequestReducer) => (target: any) => {
+  const prev = target[ALIAS_REQUEST_MAPPER] as RequestReducer;
 
-    const next: RequestMapper<T> = (event, context, value) => {
-      return mapper(event, context, prev?.(event, context, value) || value);
-    };
+  const next: RequestReducer = (event, context, value, target) => {
+    const curr = prev?.(event, context, value, target) || value;
 
-    target[ALIAS_REQUEST_MAPPER] = next;
+    return reducer(event, context, curr, target);
   };
 
-type ParamsMapper<T = unknown> = (event: APIGatewayProxyEvent, context: Context, value?: T) => T | undefined;
+  target[ALIAS_REQUEST_MAPPER] = next;
+};
 
-export const select =
-  <T>(key: string) =>
-  (mapper: ParamsMapper<T>): RequestMapper =>
-  (event, context, value) => {
+export type RequestSelectorMapper<T = unknown> = (event: APIGatewayProxyEvent, context: Context, value: T | undefined, target: GenericOf<unknown>) => T;
+
+export const requestSelector =
+  <T = unknown>(key: string) =>
+  (mapper: RequestSelectorMapper<T>): RequestReducer =>
+  (event, context, value, target) => {
     const prev = value[key] as T;
 
-    const result = mapper(event, context, prev);
+    const result = mapper(event, context, prev, target);
 
     return {
       ...value,

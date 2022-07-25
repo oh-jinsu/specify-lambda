@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 export * from "./exception";
 
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
@@ -12,11 +11,11 @@ export const specify =
   (lambda: Lambda<T, K>) =>
   async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
     try {
-      const params = calculateParams<T>(event, context, request) || new request();
+      const params = calculateParams(event, context, {}, request) || new request();
 
       const result = await lambda(params);
 
-      const { statusCode, headers, body } = calculateResult(response, result) || result;
+      const { statusCode, headers, body } = calculateResult(result, response) || result;
 
       return {
         statusCode: statusCode || 200,

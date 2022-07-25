@@ -1,79 +1,106 @@
-import { mapRequest as map, selectParam as select } from "../../../core/mappers";
+import { APIGatewayProxyEvent, Context } from "aws-lambda";
+import { calculateParams, enhanceRequest, requestSelector } from "../../../core/mappers/request";
+import { GenericOf } from "../../../core/types";
 import { BadRequestException } from "../../exceptions";
+import { ALIAS_BODY } from "./constants";
 
-export const Required = () => (target: any, name: string) =>
-  map(
-    select(name)((_, __, value) => {
-      if (!value) {
-        throw new BadRequestException();
-      }
+type Mapper<T> = (event: APIGatewayProxyEvent, context: Context, value: unknown) => T;
 
+export const Is =
+  <T>(mapper: Mapper<T>) =>
+  (target: any, name: string) =>
+    enhanceRequest(requestSelector(name)(mapper))(target);
+
+const validator =
+  <T>(validate: (value: unknown) => boolean): Mapper<T | unknown> =>
+  (event, context, value): T | unknown => {
+    if (!value) {
       return value;
-    }),
-  )(target);
-
-export const Is = (assertion: (value: unknown) => boolean) => (target: any, name: string) =>
-  map(
-    select(name)((_, __, value) => {
-      if (!value) {
-        return value;
-      }
-
-      if (!assertion(value)) {
-        throw new BadRequestException();
-      }
-
-      return value;
-    }),
-  )(target);
-
-const booleanValidator = (value: unknown) => typeof value === "boolean";
-
-export const IsBoolean = () => Is(booleanValidator);
-
-const stringValidator = (value: unknown) => typeof value === "string";
-
-export const IsString = () => Is(stringValidator);
-
-const numberValidator = (value: unknown) => !isNaN(Number(value));
-
-export const IsNumber = () => Is(numberValidator);
-
-export const IsArray = (validate?: (value: unknown, index: number, array: unknown[]) => boolean) =>
-  Is((value) => {
-    if (!Array.isArray(value)) {
-      return false;
     }
 
-    if (!validate) {
-      return true;
+    if (validate(value)) {
+      return value as T;
     }
 
-    return value.every(validate);
-  });
+    throw new BadRequestException();
+  };
 
-export const IsBooleanArray = () => IsArray(booleanValidator);
+export const required: Mapper<unknown> = (_, __, value) => {
+  if (!value) {
+    throw new BadRequestException();
+  }
 
-export const IsStringArray = () => IsArray(stringValidator);
+  return value;
+};
 
-export const IsNumberArray = () => IsArray(numberValidator);
+export const Required = () => Is(required);
 
-const objectValidadator = (value: unknown) => typeof value === "object" && !Array.isArray(value);
+const ofBoolean = validator<boolean>((value) => typeof value === "boolean");
 
-export const IsObject = () => Is(objectValidadator);
+export const IsBoolean = () => Is(ofBoolean);
 
-export const IsObjectArray = () => IsArray(objectValidadator);
+const ofString = validator<string>((value) => typeof value === "string");
 
-export const IsOneOf = (array: unknown[]) => Is((value) => array.includes(value));
+export const IsString = () => Is(ofString);
+
+const ofNumber = validator<number>((value) => typeof value === "number");
+
+export const IsNumber = () => Is(ofNumber);
+
+export const arrayOf =
+  <T>(mapper?: Mapper<T>): Mapper<T[] | unknown> =>
+  (event, context, array) => {
+    if (!array) {
+      return array;
+    }
+
+    if (!Array.isArray(array)) {
+      throw new BadRequestException();
+    }
+
+    if (!mapper) {
+      return array;
+    }
+
+    return array.map((item) => mapper(event, context, item));
+  };
+
+export const IsBooleanArray = () => Is(arrayOf(ofBoolean));
+
+export const IsStringArray = () => Is(arrayOf(ofString));
+
+export const IsNumberArray = () => Is(arrayOf(ofNumber));
+
+export const IsOneOf = (array: unknown[]) => Is(validator((value) => array.includes(value)));
 
 export const IsMatched = (regex: RegExp) =>
-  Is((value) => {
-    if (typeof value !== "string") {
-      return false;
-    }
+  Is(
+    validator((value) => {
+      if (typeof value !== "string") {
+        return false;
+      }
 
-    return regex.test(value);
-  });
+      return regex.test(value);
+    }),
+  );
 
 export const IsEmail = () =>
   IsMatched(/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/);
+
+export const nestedOf =
+  <T>(type: GenericOf<T>): Mapper<T | unknown> =>
+  (event, context, value) => {
+    if (!value) {
+      return value;
+    }
+
+    if (typeof value !== "object" || Array.isArray(value)) {
+      throw new BadRequestException();
+    }
+
+    return calculateParams(event, context, { [ALIAS_BODY]: value }, type) || new type();
+  };
+
+export const IsNested = <T>(type: GenericOf<T>) => Is(nestedOf(type));
+
+export const IsNestedArray = <T>(type: GenericOf<T>) => Is(arrayOf(nestedOf(type)));

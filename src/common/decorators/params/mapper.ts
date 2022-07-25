@@ -1,30 +1,49 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { calculateParams, map, select } from "../../../core/mappers/request";
-import { GenericOf } from "../../../core/types";
+import { enhanceRequest, requestSelector } from "../../../core/mappers/request";
 import { BadRequestException } from "../../exceptions";
+import { ALIAS_BODY } from "./constants";
 
-export const Query = (key: string) => (target: any, name: string) => map(select(name)((event) => event.queryStringParameters?.[key]))(target);
+export const Query = (key: string) => (target: any, name: string) =>
+  enhanceRequest(requestSelector(name)((event) => event.queryStringParameters?.[key]))(target);
 
-export const Path = (key: string) => (target: any, name: string) => map(select(name)((event) => event.pathParameters?.[key]))(target);
+export const Path = (key: string) => (target: any, name: string) => enhanceRequest(requestSelector(name)((event) => event.pathParameters?.[key]))(target);
 
-export const Body = (key: string) => (target: any, name: string) =>
-  map(
-    select(name)((event) => {
+export const Body = (key?: string) => (target: any, name: string) =>
+  enhanceRequest((event, context, value) => {
+    if (!value[ALIAS_BODY]) {
       if (!event.body) {
-        return;
+        value[ALIAS_BODY] = {};
+      } else {
+        value[ALIAS_BODY] = JSON.parse(event.body);
       }
+    }
 
-      return JSON.parse(event.body)[key];
-    }),
-  )(target);
+    if (key) {
+      const result = (value[ALIAS_BODY] as Record<string, unknown>)[key];
 
-export const Header = (key: string) => (target: any, name: string) => map(select(name)((event) => event.headers?.[key]))(target);
+      return {
+        ...value,
+        [name]: result,
+      };
+    }
 
-export const BearerAuth = () => (target: any, name: string) => map(select(name)((event) => event.headers?.["Authorization"]?.replace("Bearer ", "")))(target);
+    const result = value[ALIAS_BODY];
+
+    delete value[ALIAS_BODY];
+
+    return {
+      ...value,
+      [name]: result,
+    };
+  })(target);
+
+export const Header = (key: string) => (target: any, name: string) => enhanceRequest(requestSelector(name)((event) => event.headers?.[key]))(target);
+
+export const BearerAuth = () => (target: any, name: string) =>
+  enhanceRequest(requestSelector(name)((event) => event.headers?.["Authorization"]?.replace("Bearer ", "")))(target);
 
 export const Cookie = (key: string) => (target: any, name: string) =>
-  map(
-    select(name)((event) => {
+  enhanceRequest(
+    requestSelector(name)((event) => {
       const cookies = event.headers?.["Cookie"];
 
       if (!cookies) {
@@ -44,8 +63,8 @@ export const Cookie = (key: string) => (target: any, name: string) =>
 export const Parse =
   <T>(parser: (value: unknown) => T) =>
   (target: any, name: string) =>
-    map(
-      select(name)((_, __, value) => {
+    enhanceRequest(
+      requestSelector(name)((_, __, value) => {
         const result: T = (() => {
           try {
             return parser(value);
@@ -114,32 +133,8 @@ export const ToNumberArray = () =>
 export const ToBooleanArray = () =>
   ToArray((item) => {
     if (item === "false") {
-      return true;
+      return false;
     }
 
     return Boolean(item);
   });
-
-export type NestedBodyOptions<T> = {
-  readonly type: GenericOf<T>;
-};
-
-export const NestedBody =
-  <T>(key: string, { type }: NestedBodyOptions<T>) =>
-  (target: any, name: string) =>
-    map(
-      select<T>(key)((event, context, value) => {
-        if (!event.body) {
-          return value;
-        }
-
-        const body = JSON.parse(event.body);
-
-        const newevent = {
-          ...event,
-          body: JSON.stringify(body[key]),
-        };
-
-        return calculateParams(newevent, context, type);
-      }),
-    )(target);

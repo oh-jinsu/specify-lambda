@@ -3,27 +3,29 @@
 ```ts
 // index.ts
 
-import { specify, Get, Query } from "specify-lambda"
+import { specify, Get, Query, StatusCode, SnakeCase } from "specify-lambda"
 
 @Get()
-export class Req {
+export class Request {
   @Query("username")
   username: string;
 }
 
-export class Res {
-  readonly statusCode: 200
-
+@StatusCode(200)
+export class Response {
+  @SnakeCase()
   readonly body: {
     readonly message: string
   }
 }
 
-export const handler = specify(Req, Res)(async ({ username }) => {
+export const handler = specify(
+  Request,
+  Response,
+)(async ({ username }) => {
   const message = `Hello ${username || "world"}!`
   
   return {
-    statusCode: 200,
     body: { message },
   }
 })

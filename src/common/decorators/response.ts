@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { mapResponse, selectProp } from "../../core/mappers";
+import { enhanceResponse, responseSelector } from "../../core/mappers";
 
 export const StatusCode = (code: number) => (target: any) =>
-  mapResponse((value) => {
+  enhanceResponse((value) => {
     if (code === 204) {
       return {
         ...value,
         statusCode: code,
-        body: undefined,
       };
     }
 
@@ -19,8 +18,8 @@ export const StatusCode = (code: number) => (target: any) =>
   })(target.prototype);
 
 export const SnakeCase = () => (target: any, name: string) =>
-  mapResponse(
-    selectProp("body")((value) => {
+  enhanceResponse(
+    responseSelector("body")((value) => {
       const toSnakeCase = (value: any): any => {
         if (value === null || value === undefined) {
           return undefined;
