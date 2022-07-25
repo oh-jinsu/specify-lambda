@@ -8,7 +8,7 @@ export const Query = (key: string) => (target: any, name: string) =>
 export const Path = (key: string) => (target: any, name: string) => enhanceRequest(requestSelector(name)((event) => event.pathParameters?.[key]))(target);
 
 export const Body = (key?: string) => (target: any, name: string) =>
-  enhanceRequest((event, context, value) => {
+  enhanceRequest((event, _, value) => {
     if (!value[ALIAS_BODY]) {
       if (!event.body) {
         value[ALIAS_BODY] = {};

@@ -4,16 +4,16 @@ import { GenericOf } from "../../../core/types";
 import { BadRequestException } from "../../exceptions";
 import { ALIAS_BODY } from "./constants";
 
-type Mapper<T> = (event: APIGatewayProxyEvent, context: Context, value: unknown) => T;
+type Filter<T> = (value: unknown, event: APIGatewayProxyEvent, context: Context) => T;
 
 export const Is =
-  <T>(mapper: Mapper<T>) =>
+  <T>(filter: Filter<T>) =>
   (target: any, name: string) =>
-    enhanceRequest(requestSelector(name)(mapper))(target);
+    enhanceRequest(requestSelector(name)((event, context, value) => filter(value, event, context)))(target);
 
 const validator =
-  <T>(validate: (value: unknown) => boolean): Mapper<T | unknown> =>
-  (event, context, value): T | unknown => {
+  <T>(validate: (value: unknown) => boolean): Filter<T | unknown> =>
+  (value): T | unknown => {
     if (!value) {
       return value;
     }
@@ -25,7 +25,7 @@ const validator =
     throw new BadRequestException();
   };
 
-export const required: Mapper<unknown> = (_, __, value) => {
+export const required: Filter<unknown> = (_, __, value) => {
   if (!value) {
     throw new BadRequestException();
   }
@@ -48,7 +48,7 @@ const ofNumber = validator<number>((value) => typeof value === "number");
 export const IsNumber = () => Is(ofNumber);
 
 export const arrayOf =
-  <T>(mapper?: Mapper<T>): Mapper<T[] | unknown> =>
+  <T>(filter?: Filter<T>): Filter<T[] | unknown> =>
   (event, context, array) => {
     if (!array) {
       return array;
@@ -58,11 +58,11 @@ export const arrayOf =
       throw new BadRequestException();
     }
 
-    if (!mapper) {
+    if (!filter) {
       return array;
     }
 
-    return array.map((item) => mapper(event, context, item));
+    return array.map((item) => filter(event, context, item));
   };
 
 export const IsBooleanArray = () => Is(arrayOf(ofBoolean));
@@ -71,7 +71,9 @@ export const IsStringArray = () => Is(arrayOf(ofString));
 
 export const IsNumberArray = () => Is(arrayOf(ofNumber));
 
-export const IsOneOf = (array: unknown[]) => Is(validator((value) => array.includes(value)));
+export const oneOf = (array: readonly unknown[]) => validator((value) => array.includes(value));
+
+export const IsOneOf = (array: readonly unknown[]) => Is(oneOf(array));
 
 export const IsMatched = (regex: RegExp) =>
   Is(
@@ -88,8 +90,8 @@ export const IsEmail = () =>
   IsMatched(/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/);
 
 export const nestedOf =
-  <T>(type: GenericOf<T>): Mapper<T | unknown> =>
-  (event, context, value) => {
+  <T>(type: GenericOf<T>): Filter<T | unknown> =>
+  (value, event, context) => {
     if (!value) {
       return value;
     }
