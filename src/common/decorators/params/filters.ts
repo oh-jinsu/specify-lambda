@@ -35,21 +35,21 @@ export const required: Filter<unknown> = (_, __, value) => {
 
 export const Required = () => Is(required);
 
-const ofBoolean = validator<boolean>((value) => typeof value === "boolean");
+export const ofBoolean = validator<boolean>((value) => typeof value === "boolean");
 
 export const IsBoolean = () => Is(ofBoolean);
 
-const ofString = validator<string>((value) => typeof value === "string");
+export const ofString = validator<string>((value) => typeof value === "string");
 
 export const IsString = () => Is(ofString);
 
-const ofNumber = validator<number>((value) => typeof value === "number");
+export const ofNumber = validator<number>((value) => typeof value === "number");
 
 export const IsNumber = () => Is(ofNumber);
 
-export const arrayOf =
+export const each =
   <T>(filter?: Filter<T>): Filter<T[] | unknown> =>
-  (event, context, array) => {
+  (array, event, context) => {
     if (!array) {
       return array;
     }
@@ -62,14 +62,14 @@ export const arrayOf =
       return array;
     }
 
-    return array.map((item) => filter(event, context, item));
+    return array.map((item) => filter(item, event, context));
   };
 
-export const IsBooleanArray = () => Is(arrayOf(ofBoolean));
+export const IsBooleanArray = () => Is(each(ofBoolean));
 
-export const IsStringArray = () => Is(arrayOf(ofString));
+export const IsStringArray = () => Is(each(ofString));
 
-export const IsNumberArray = () => Is(arrayOf(ofNumber));
+export const IsNumberArray = () => Is(each(ofNumber));
 
 export const oneOf = (array: readonly unknown[]) => validator((value) => array.includes(value));
 
@@ -105,4 +105,4 @@ export const nestedOf =
 
 export const IsNested = <T>(type: GenericOf<T>) => Is(nestedOf(type));
 
-export const IsNestedArray = <T>(type: GenericOf<T>) => Is(arrayOf(nestedOf(type)));
+export const IsNestedArray = <T>(type: GenericOf<T>) => Is(each(nestedOf(type)));
